@@ -1,8 +1,10 @@
 import spiceypy
 import datetime
-from django.conf import settings
 import math
 import os
+
+class settings:
+    KERNELS_FOLDER = os.environ['SPICE_KERNELS_SOLO']
 
 class SpiceManager:
     # SOLAR ORBITER naif identifier
@@ -43,13 +45,13 @@ class SpiceKernels():
 
     def __init__(self):
         self.spice = spiceypy
-        tls_filename = settings.BASE_DIR + '/' + self.kernels_folder + '/lsk/naif0012.tls'
+        tls_filename = settings.KERNELS_FOLDER + '/lsk/naif0012.tls'
 
         # The file.tm loads each kernel file we need
         if self.SPICE_kernels_exists():
-            self.mk_file = os.popen('ls ' + settings.BASE_DIR + '/' + self.kernels_folder + '/mk/solo_ANC_soc-flown-mk_*').read().split()[0]
-            self.mk_file_bepi = settings.BASE_DIR + '/' + self.kernels_folder + '/BEPICOLOMBO/mk/bc_plan_v260_20201214_001.tm'
-            sclk_filename = os.popen('ls -1 ' + settings.BASE_DIR + '/' + self.kernels_folder + '/sclk/solo_ANC_soc-sclk_* | sort -r | head -n 1').read().split()[0]
+            self.mk_file = os.popen('ls ' + settings.KERNELS_FOLDER + '/mk/solo_ANC_soc-flown-mk_*').read().split()[0]
+            self.mk_file_bepi = settings.KERNELS_FOLDER + '/BEPICOLOMBO/mk/bc_plan_v260_20201214_001.tm'
+            sclk_filename = os.popen('ls -1 ' + settings.KERNELS_FOLDER + '/sclk/solo_ANC_soc-sclk_* | sort -r | head -n 1').read().split()[0]
             self.spice_manager = SpiceManager(tls_filename, sclk_filename)
         else:
             self.mk_file = ''
@@ -60,7 +62,7 @@ class SpiceKernels():
         ready_str = ''
         if test_ready:
             ready_str = '_ready'
-        return os.path.exists(settings.BASE_DIR + '/' + self.kernels_folder + ready_str)
+        return os.path.exists(settings.KERNELS_FOLDER + ready_str)
 
     def getMkFile(self, object_id):
         if object_id == 'MPO' or object_id == 'MMO':
@@ -68,12 +70,12 @@ class SpiceKernels():
 
         if self.SPICE_kernels_exists():
             # The path needs to be recovered again, otherwise it can yield a location path error because of an obsolete one
-            return os.popen('ls ' + settings.BASE_DIR + '/' + self.kernels_folder + '/mk/solo_ANC_soc-flown-mk_*').read().split()[0]
+            return os.popen('ls ' + settings.KERNELS_FOLDER + '/mk/solo_ANC_soc-flown-mk_*').read().split()[0]
         return ""
 
     def getVersion(self):
         if self.SPICE_kernels_exists():
-            cmd_ls = 'cd ' + settings.BASE_DIR + '/' + self.kernels_folder + '/mk/ && ls solo_ANC_soc-flown-mk_*'
+            cmd_ls = 'cd ' + settings.KERNELS_FOLDER + '/mk/ && ls solo_ANC_soc-flown-mk_*'
             result = os.popen(cmd_ls).read().split()[0]
             result = result.split('.')[0]
             result = result.split('-mk_')[1]
@@ -85,10 +87,10 @@ class SpiceKernels():
     def thereIsNewVersion(self):
         # check if in SPICE_kernels_ready/ new delta files were loaded (i.e. the mk/flown... file changed)
         if self.SPICE_kernels_exists() and self.SPICE_kernels_exists(True):
-            cmd_ls = 'cd ' + settings.BASE_DIR + '/' + self.kernels_folder + '_ready/mk/ && ls solo_ANC_soc-flown-mk_*'
+            cmd_ls = 'cd ' + settings.KERNELS_FOLDER + '_ready/mk/ && ls solo_ANC_soc-flown-mk_*'  # FIXME
             result = os.popen(cmd_ls).read().split()[0]
             ready_version = result.split('.')[0]
-            cmd_ls = 'cd ' + settings.BASE_DIR + '/' + self.kernels_folder + '/mk/ && ls solo_ANC_soc-flown-mk_*'
+            cmd_ls = 'cd ' + settings.KERNELS_FOLDER + '/mk/ && ls solo_ANC_soc-flown-mk_*'
             result = os.popen(cmd_ls).read().split()[0]
             current_version = result.split('.')[0]
             return ready_version != current_version
@@ -97,7 +99,7 @@ class SpiceKernels():
 
     def thereIsBackup(self):
         # check if in SPICE_kernels_old/ exists
-        return os.path.exists(settings.BASE_DIR + '/' + self.kernels_folder + '_old/')
+        return os.path.exists(settings.KERNELS_FOLDER + '_old/')  # FIXME
 
     def restoreUTC(self, et):
         # convert et in TDB J2000 (spice kernels) to string 1970 UTC
@@ -251,7 +253,7 @@ class SpiceKernels():
 
     def showCassiniPosition(self):
         print('Example with Cassini position:')
-        self.spice.furnsh(settings.BASE_DIR + "/SPICE_kernels/cassini_example/cassMetaK.txt")
+        self.spice.furnsh(settings.KERNELS_FOLDER + "/cassini_example/cassMetaK.txt")
         step = 4000
         utc = ['Jun 20, 2004', 'Dec 1, 2005']
         etOne = self.spice.str2et(utc[0])
