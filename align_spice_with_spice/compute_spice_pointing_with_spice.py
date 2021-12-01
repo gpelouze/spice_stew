@@ -18,7 +18,8 @@ def compute_spice_pointing(spice_fits):
 
     import eipy; eipy.sh()
 
-    t_beg = spice_fits[0].header['DATE-BEG']
-    t_end = spice_fits[0].header['DATE-END']
+    timestamps = spice_fits[9].data['TIMAQUTC'][0, 0, 0, 0]
+
     spicek = miso_spice_kernels.SpiceKernels()
-    orbit = spicek.getOrbit('SOLO', t_beg, t_end)
+    orbit = spicek.getOrbit('SOLO', timestamps)
+    pos, rot, ecl = spicek.getObjectPositions('SOLO', timestamps)

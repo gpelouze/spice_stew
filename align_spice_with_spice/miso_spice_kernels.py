@@ -108,20 +108,27 @@ class SpiceKernels():
         dt = datetime.datetime.fromtimestamp(et) + j2000_to_1970
         return dt.strftime("%Y-%m-%d %H:%M:%S")
 
-    def getOrbit(self, object_id, start, end, obs_id='SUN'):
+    def getOrbit(self, object_id, timestamps, obs_id='SUN'):
+        ''' Get a list of x,y,z positions of an object
+
+        Parameters
+        ==========
+        object_id : str
+            Target body name. Can be 'EARTH', 'SOLO', ...
+        timestamps : list of str
+            List of timestamps at which to get the orbit. These timestamps are
+            strings describing an epoch, parsable by spiceypy.str2et (e.g.
+            YYYY-MM-DDTHH:MM:SS.SSS)..
+        obs_id : str (default: 'SUN')
+            The reference observing body name.
+        '''
         if self.SPICE_kernels_exists():
             self.clear_session()
             self.spice.furnsh(self.getMkFile(object_id))
 
-            step_sec = 3600*24 # one point every step_sec seconds to draw the orbit
-            et_start = self.spice.str2et(start)
-            et_end = self.spice.str2et(end)
-            total_duration = et_end - et_start
             points = []
 
-            for i in range(0, int(et_end - et_start) + 1, step_sec):
-                et = et_start + i
-
+            for et in self.spice.str2et(timestamps):
                 points_km, lightTimes = self.spice.spkpos(object_id, et, 'HCI', 'NONE', obs_id)
                 points_UA = [pos / self.UA_in_km for pos in points_km.tolist()]
 
@@ -134,12 +141,18 @@ class SpiceKernels():
         else:
             return [{}]
 
-    def getObjectPositions(self, object_id, date_start, date_end, obs_id='SUN'):
+    def getObjectPositions(self, object_id, timestamps, obs_id='SUN'):
         """
         Returns 2 arrays of x,y,z positions and rotations according to the obs_id (in UA)
-        object_id can be EARTH, SOLO...
-        date_start and date_end matches the YYYY-MM-DD HH:mm:ss format
-        obs_id is the reference observer object (default is SUN)
+
+        object_id : str
+            Target body name. Can be 'EARTH', 'SOLO', ...
+        timestamps : list of str
+            List of timestamps at which to get the orbit. These timestamps are
+            strings describing an epoch, parsable by spiceypy.str2et (e.g.
+            YYYY-MM-DDTHH:MM:SS.SSS)..
+        obs_id : str (default: 'SUN')
+            The reference observing body name.
         """
         positions = []
         rotations = []
@@ -151,14 +164,7 @@ class SpiceKernels():
         self.clear_session()
         self.spice.furnsh(self.getMkFile(object_id))
 
-        # conversion UTC to J2000 TDB
-        et_start = self.spice.str2et(date_start)
-        et_end = self.spice.str2et(date_end)
-        total_duration = et_end - et_start
-        seconds_to_skip = max(int(total_duration / 600), 1)
-
-        for i in range(0, int(et_end - et_start) + 1, seconds_to_skip):
-            et = et_start + i  # next ith second
+        for et in self.spice.str2et(timestamps):
             position_km, lightTimes = self.spice.spkpos(object_id, et, 'HCI', 'NONE', obs_id)
             position_UA = [pos / self.UA_in_km for pos in position_km.tolist()]
 
