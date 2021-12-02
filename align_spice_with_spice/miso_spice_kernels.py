@@ -109,7 +109,7 @@ class SpiceKernels():
         return dt.strftime("%Y-%m-%d %H:%M:%S")
 
     def getOrbit(self, object_id, timestamps, obs_id='SUN'):
-        ''' Get a list of x,y,z positions of an object
+        ''' Get the position of an object in the HCI frame
 
         Parameters
         ==========
@@ -121,6 +121,12 @@ class SpiceKernels():
             YYYY-MM-DDTHH:MM:SS.SSS)..
         obs_id : str (default: 'SUN')
             The reference observing body name.
+
+        Returns
+        =======
+        positions : list of dict
+            List of positions for the object in the HCI frame, in km.
+            Each item of the list is a dict with keys 'x', 'y', and 'z'.
         '''
         if self.SPICE_kernels_exists():
             self.clear_session()
@@ -130,9 +136,8 @@ class SpiceKernels():
 
             for et in self.spice.str2et(timestamps):
                 points_km, lightTimes = self.spice.spkpos(object_id, et, 'HCI', 'NONE', obs_id)
-                points_UA = [pos / self.UA_in_km for pos in points_km.tolist()]
 
-                pos_x_y_z = {'x': points_UA[0], 'y': points_UA[2], 'z': -points_UA[1]}
+                pos_x_y_z = {'x': points_km[0], 'y': points_km[2], 'z': -points_km[1]}
                 points.append(pos_x_y_z)
 
             self.clear_session()
@@ -142,9 +147,10 @@ class SpiceKernels():
             return [{}]
 
     def getObjectPositions(self, object_id, timestamps, obs_id='SUN'):
-        """
-        Returns 2 arrays of x,y,z positions and rotations according to the obs_id (in UA)
+        """ Get the positon and rotation of an object in the HCI frame.
 
+        Parameters
+        ==========
         object_id : str
             Target body name. Can be 'EARTH', 'SOLO', ...
         timestamps : list of str
@@ -153,6 +159,18 @@ class SpiceKernels():
             YYYY-MM-DDTHH:MM:SS.SSS)..
         obs_id : str (default: 'SUN')
             The reference observing body name.
+
+        Returns
+        =======
+        positions : list of dict
+            List of positions for the object in the HCI frame, in km.
+            Each item of the list is a dict with keys 'x', 'y', and 'z'.
+        rotations : list of dict
+            List of rotation vectors for the object.
+            Each item of the list is a dict with keys 'x', 'y', and 'z'.
+        ecliptic :
+            If the object is 'EARTH', return a list of rotations of the
+            ecliptic.
         """
         positions = []
         rotations = []
@@ -166,9 +184,8 @@ class SpiceKernels():
 
         for et in self.spice.str2et(timestamps):
             position_km, lightTimes = self.spice.spkpos(object_id, et, 'HCI', 'NONE', obs_id)
-            position_UA = [pos / self.UA_in_km for pos in position_km.tolist()]
 
-            pos_x_y_z = {'x': position_UA[0], 'y': position_UA[2], 'z': -position_UA[1]}
+            pos_x_y_z = {'x': position_km[0], 'y': position_km[2], 'z': -position_km[1]}
             positions.append(pos_x_y_z)
 
             if object_id == 'SOLO':
