@@ -22,7 +22,6 @@ if __name__ == '__main__':
     else:
         raise NotImplementedError  # TODO: handle this case
 
-    fits_files = [fits.open(f)
-                  for f in tqdm(args.file, desc='Opening files')]
-    pointing = [compute_spice_pointing(f)
-                for f in tqdm(fits_files, desc='Computing pointing')]
+    fits_files = [fits.open(f) for f in tqdm(args.file, desc='Opening files')]
+    timestamps = [f[-1].data['TIMAQUTC'][0, 0, 0, 0] for f in fits_files]
+    pointing = [compute_spice_pointing(ts) for ts in timestamps]
