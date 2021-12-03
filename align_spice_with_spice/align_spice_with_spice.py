@@ -6,7 +6,8 @@ import os
 from astropy.io import fits
 from tqdm import tqdm
 
-from compute_spice_pointing_with_spice import compute_spice_pointing
+from compute_spice_pointing_with_spice import SpiceSpicePointing
+
 
 if __name__ == '__main__':
 
@@ -22,6 +23,9 @@ if __name__ == '__main__':
     else:
         raise NotImplementedError  # TODO: handle this case
 
-    fits_files = [fits.open(f) for f in tqdm(args.file, desc='Opening files')]
-    timestamps = [f[-1].data['TIMAQUTC'][0, 0, 0, 0] for f in fits_files]
-    pointing = [compute_spice_pointing(ts) for ts in timestamps]
+    spice_spice_pointing = SpiceSpicePointing()
+
+    for filename in args.file:
+        fits_file = fits.open(filename)
+        timestamps = fits_file[-1].data['TIMAQUTC'][0, 0, 0, 0]
+        Tx, Ty, roll = spice_spice_pointing.compute_pointing(timestamps)
