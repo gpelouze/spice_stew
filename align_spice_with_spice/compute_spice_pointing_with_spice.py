@@ -65,10 +65,10 @@ class SpiceSpicePointing():
         roll = []
         for et in spiceypy.str2et(timestamps):
             rot_mat = spiceypy.pxform('SOLO_SUN_RTN', 'SOLO_SRF', et)
-            r1, r2, r3 = spiceypy.m2eul(rot_mat, 1, 2, 3)
-            Tx.append(r3 + np.pi)
-            Ty.append(- r2)
-            roll.append(- r1)
+            r2, r3, r1 = spiceypy.m2eul(rot_mat, 2, 3, 1)
+            Ty.append(- r2 + np.pi)
+            Tx.append(r3)
+            roll.append(r1 + np.pi)
         Tx = u.Quantity(Tx, 'rad').to('arcsec')
         Ty = u.Quantity(Ty, 'rad').to('arcsec')
         roll = u.Quantity(roll, 'rad').to('deg')
