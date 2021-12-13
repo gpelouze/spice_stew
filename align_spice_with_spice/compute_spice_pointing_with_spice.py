@@ -41,12 +41,17 @@ class SpiceSpicePointing():
         ''' Clear SPICE kernels '''
         spiceypy.kclear()
 
+    def _parse_timestamps(self, timestamps):
+        if np.issubdtype(timestamps.dtype, np.datetime64):
+            timestamps = np.datetime_as_string(timestamps)
+        return spiceypy.str2et(timestamps)
+
     def compute_pointing(self, timestamps):
         ''' Compute SPICE pointing
 
         Parameters
         ==========
-        timestamps : list of str, size (nt,)
+        timestamps : list of str or np.datetime64, size (nt,)
             List of timestamps at which to compute the pointing. These
             timestamps are strings describing an epoch, parsable by
             spiceypy.str2et (e.g. YYYY-MM-DDTHH:MM:SS.SSS)..
@@ -63,7 +68,7 @@ class SpiceSpicePointing():
         Tx = []
         Ty = []
         roll = []
-        for et in spiceypy.str2et(timestamps):
+        for et in self._parse_timestamps(timestamps):
             rot_mat = spiceypy.pxform('SOLO_SUN_RTN', 'SOLO_SRF', et)
             r2, r3, r1 = spiceypy.m2eul(rot_mat, 2, 3, 1)
             Ty.append(- r2 + np.pi)
