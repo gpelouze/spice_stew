@@ -124,25 +124,24 @@ class PlotResults():
 
 if __name__ == '__main__':
 
-    p = argparse.ArgumentParser()
-    p.add_argument('file', nargs='+',
-                   help=('SPICE L2 FITS to align.'))
-    p.add_argument('-O', '--output-dir',
-                   help=('output directory, if different '
-                         'from that of the input files'))
-    p.add_argument('--plot-results', action='store_true',
-                   help='plot results')
+    p = argparse.ArgumentParser(
+        description=('Correct the pointing of the SPICE spectrometer '
+                     'using SPICE kernels'),
+        )
+    p.add_argument('files', nargs='+',
+                   help='SPICE L2 FITS to align')
+    p.add_argument('-O', '--output-dir', required=True,
+                   help='output directory (required)')
+    p.add_argument('-p', '--plot-results', action='store_true',
+                   help='generate plots to visualize the results')
     p.add_argument('--sum-wvl', action='store_true',
                    help='save wavelength-integrated images')
     args = p.parse_args()
-    if args.output_dir is not None:
-        os.makedirs(args.output_dir, exist_ok=True)
-    else:
-        raise NotImplementedError  # TODO: handle this case
+    os.makedirs(args.output_dir, exist_ok=True)
 
     spice_spice_pointing = SpiceSpicePointing()
 
-    for filename in args.file:
+    for filename in args.files:
         basename = os.path.splitext(os.path.basename(filename))[0]
         hdulist = fits.open(filename)
         timestamps = hdulist[-1].data['TIMAQUTC'][0, 0, 0, 0]
