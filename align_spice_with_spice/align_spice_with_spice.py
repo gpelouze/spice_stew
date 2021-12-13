@@ -72,6 +72,41 @@ def remap_spice_hdu(hdu, solo_Tx, solo_Ty, solo_roll):
     return new_hdu
 
 
+class PlotResults():
+    def plot_pointing(self, timestamps, Tx, Ty, roll, filename):
+        t = [np.datetime64(t) for t in timestamps]
+        plt.clf()
+        plt.plot(t, Tx - Tx[0], label='$\\theta_x$')
+        plt.plot(t, Ty - Ty[0], label='$\\theta_y$')
+        plt.legend()
+        plt.gcf().autofmt_xdate()
+        plt.xlabel('Time')
+        plt.ylabel('$\\Delta\\theta$ [arcsec]')
+        plt.savefig(filename)
+
+    def plot_hdu(self, hdu, ax):
+        img = hdu.data
+        if img.ndim > 2:
+            img = np.nansum(img, axis=1)  # Sum over wavelengths
+            img = np.squeeze(img)  # Collapse 1-depth axis (t or X)
+        img = img - np.nanmin(img)
+        norm = mpl.colors.LogNorm(
+            vmin=np.max([1, np.nanpercentile(img, 1)]),
+            vmax=np.nanpercentile(img, 99),
+            )
+        im = ax.imshow(img, origin='lower', norm=norm, aspect=1/4)
+        plt.title(hdu.name)
+        plt.colorbar(im)
+
+    def plot_hdulist(self, hdulist, filename):
+        with PdfPages(filename) as pdf:
+            for hdu in hdulist:
+                if hdu.is_image:
+                    plt.clf()
+                    self.plot_hdu(hdu, plt.gca())
+                    pdf.savefig()
+
+
 if __name__ == '__main__':
 
     p = argparse.ArgumentParser()
@@ -80,6 +115,8 @@ if __name__ == '__main__':
     p.add_argument('-O', '--output-dir',
                    help=('output directory, if different '
                          'from that of the input files'))
+    p.add_argument('--plot-results', action='store_true',
+                   help='plot results')
     args = p.parse_args()
     if args.output_dir is not None:
         os.makedirs(args.output_dir, exist_ok=True)
@@ -99,3 +136,12 @@ if __name__ == '__main__':
         new_hdulist.writeto(
             f'{args.output_dir}/{basename}_remapped.fits',
             overwrite=True)
+
+        if args.plot_results:
+            import matplotlib as mpl
+            import matplotlib.pyplot as plt
+            from matplotlib.backends.backend_pdf import PdfPages
+            p = PlotResults()
+            p.plot_pointing(timestamps, Tx, Ty, roll, f'{args.output_dir}/{basename}_plot_TxTy.pdf')
+            p.plot_hdulist(hdulist, f'{args.output_dir}/{basename}_original.pdf')
+            p.plot_hdulist(new_hdulist, f'{args.output_dir}/{basename}_remapped.pdf')
