@@ -1,0 +1,6 @@
+astropy>=4.3.1
+numpy>=1.21.4
+scipy>=1.1.0
+spiceypy>=4.0.3
+tqdm>=4.62.3
+matplotlib>=3.0.2
