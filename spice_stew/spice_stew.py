@@ -4,6 +4,7 @@ import argparse
 import glob
 import itertools
 import os
+import warnings
 
 from astropy import wcs
 from astropy.io import fits
@@ -12,6 +13,13 @@ import astropy.units as u
 import numpy as np
 import scipy.interpolate as si
 import spiceypy
+
+try:
+    import matplotlib as mpl
+    import matplotlib.pyplot as plt
+    from matplotlib.backends.backend_pdf import PdfPages
+except ImportError:
+    warnings.warn('Could not import matplotlib, visualisation will not work')
 
 
 class SpiceSpicePointing():
@@ -40,7 +48,11 @@ class SpiceSpicePointing():
         kernels_folder : str
             Folder containing SOLO SPICE kernels.
         '''
-        mk_file = sorted(glob.glob(os.path.join(kernels_folder, 'mk', 'solo_ANC_soc-flown-mk_*.tm')))[-1]
+        mk_files_pattern = os.path.join(
+            kernels_folder,
+            'mk',
+            'solo_ANC_soc-flown-mk_*.tm')
+        mk_file = sorted(glob.glob(mk_files_pattern))[-1]
         spiceypy.furnsh(mk_file)
 
     def clear_kernels(self):
@@ -172,7 +184,8 @@ def get_spice_timestamps(hdulist):
     Returns
     =======
     timestamps : array of size (nt,)
-        Timestamps for each slit position (rasters) or exposure (sit and stares)
+        Timestamps for each slit position (rasters) or exposure (sit and
+        stares)
     '''
     # extract timestamps from binary table HDU
     timestamps = hdulist[-1].data['TIMAQUTC'][0, 0, 0, 0]
@@ -253,10 +266,13 @@ if __name__ == '__main__':
         new_hdulist.writeto(filename, overwrite=True)
 
         if args.plot_results:
-            import matplotlib as mpl
-            import matplotlib.pyplot as plt
-            from matplotlib.backends.backend_pdf import PdfPages
             p = PlotResults()
-            p.plot_pointing(timestamps, Tx, Ty, roll, f'{args.output_dir}/{basename}_plot_TxTy.pdf')
-            p.plot_hdulist(hdulist, f'{args.output_dir}/{basename}_original.pdf')
-            p.plot_hdulist(new_hdulist, f'{args.output_dir}/{basename}_remapped.pdf')
+            p.plot_pointing(
+                timestamps, Tx, Ty, roll,
+                f'{args.output_dir}/{basename}_plot_TxTy.pdf')
+            p.plot_hdulist(
+                hdulist,
+                f'{args.output_dir}/{basename}_original.pdf')
+            p.plot_hdulist(
+                new_hdulist,
+                f'{args.output_dir}/{basename}_remapped.pdf')
