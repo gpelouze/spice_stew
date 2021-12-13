@@ -26,7 +26,8 @@ def remap_spice_hdu(hdu, solo_Tx, solo_Ty, solo_roll, sum_wvl=False):
         Array containing the helioprojective longitude (Tx) and latitude (Ty)
         pointed by SOLO, as well as the spacecraft roll, computed from SPICE
         kernels. All arrays must be of shape (nt,), where nt is the number of
-        slit positions in the FITS.
+        slit positions (for rasters) or exposures (for sit and stares) in the
+        FITS.
     sum_wvl : bool (default: False)
         If True, sum along wavelength axis to generate a quicklook image.
 
@@ -87,6 +88,28 @@ def remap_spice_hdu(hdu, solo_Tx, solo_Ty, solo_roll, sum_wvl=False):
     return new_hdu
 
 
+def get_spice_timestamps(hdulist):
+    ''' Get the acquisition timestamps for each slit position or exposure
+
+    Parameters
+    ==========
+    hdulist : astropy.fits.io.HDUList
+        SPICE L2 FITS HDU list.
+
+    Returns
+    =======
+    timestamps : array of size (nt,)
+        Timestamps for each slit position (rasters) or exposure (sit and stares)
+    '''
+    # extract timestamps from binary table HDU
+    timestamps = hdulist[-1].data['TIMAQUTC'][0, 0, 0, 0]
+    timestamps = np.array([np.datetime64(t) for t in timestamps])
+    # extract exposure time from primary HDU header
+    t_exp = np.timedelta64(int(1e3*hdulist[0].header['XPOSURE']), 'ms')
+    # add half-exposure-time to get the center of the exposure
+    return timestamps + t_exp / 2
+
+
 class PlotResults():
     def plot_pointing(self, timestamps, Tx, Ty, roll, filename):
         t = [np.datetime64(t) for t in timestamps]
@@ -144,7 +167,7 @@ if __name__ == '__main__':
     for filename in args.files:
         basename = os.path.splitext(os.path.basename(filename))[0]
         hdulist = fits.open(filename)
-        timestamps = hdulist[-1].data['TIMAQUTC'][0, 0, 0, 0]
+        timestamps = get_spice_timestamps(hdulist)
         Tx, Ty, roll = spice_spice_pointing.compute_pointing(timestamps)
         new_hdulist = fits.HDUList(hdus=[])
         for hdu in hdulist:
