@@ -14,7 +14,7 @@ import scipy.interpolate as si
 from compute_spice_pointing_with_spice import SpiceSpicePointing
 
 
-def remap_spice_hdu(hdu, solo_Tx, solo_Ty, solo_roll):
+def remap_spice_hdu(hdu, solo_Tx, solo_Ty, solo_roll, sum_wvl=False):
     ''' Remap a SPICE spectral cube to corrected coordinates
 
     Parameters
@@ -27,6 +27,8 @@ def remap_spice_hdu(hdu, solo_Tx, solo_Ty, solo_roll):
         pointed by SOLO, as well as the spacecraft roll, computed from SPICE
         kernels. All arrays must be of shape (nt,), where nt is the number of
         slit positions in the FITS.
+    sum_wvl : bool (default: False)
+        If True, sum along wavelength axis to generate a quicklook image.
 
     Returns
     =======
@@ -64,11 +66,24 @@ def remap_spice_hdu(hdu, solo_Tx, solo_Ty, solo_roll):
     itD = itertools.product(range(nt), range(nD))
 
     new_hdu = hdu.copy()
-    for it, iD in tqdm(itD, desc=f'Remapping {hdu.name}', total=nt*nD):
-        img = hdu.data[it, iD]
+    if sum_wvl:
+        # Integrated intensity
+        img = np.nansum(hdu.data, axis=1)  # Sum over wavelengths
+        img = np.squeeze(img)  # Collapse 1-depth axis (t or X)
         interp = si.LinearNDInterpolator(points, img.flatten())
         new_img = interp(xi_interp)
-        new_hdu.data[it, iD] = new_img
+        new_hdu.data = new_img.reshape(1, 1, *new_img.shape)
+    else:
+        # Full slices
+        for it, iD in tqdm(itD, desc=f'Remapping {hdu.name}', total=nt*nD):
+            img = hdu.data[it, iD]
+            interp = si.LinearNDInterpolator(points, img.flatten())
+            new_img = interp(xi_interp)
+            new_hdu.data[it, iD] = new_img
+    new_hdu.update_header()
+    new_hdu.header.add_history('align_spice_with_spice.py')
+    new_hdu.add_datasum()
+    new_hdu.add_checksum()
     return new_hdu
 
 
@@ -117,6 +132,8 @@ if __name__ == '__main__':
                          'from that of the input files'))
     p.add_argument('--plot-results', action='store_true',
                    help='plot results')
+    p.add_argument('--sum-wvl', action='store_true',
+                   help='save wavelength-integrated images')
     args = p.parse_args()
     if args.output_dir is not None:
         os.makedirs(args.output_dir, exist_ok=True)
@@ -132,10 +149,13 @@ if __name__ == '__main__':
         Tx, Ty, roll = spice_spice_pointing.compute_pointing(timestamps)
         new_hdulist = fits.HDUList(hdus=[])
         for hdu in hdulist:
-            new_hdulist.append(remap_spice_hdu(hdu, Tx, Ty, roll))
-        new_hdulist.writeto(
-            f'{args.output_dir}/{basename}_remapped.fits',
-            overwrite=True)
+            new_hdu = remap_spice_hdu(hdu, Tx, Ty, roll, sum_wvl=args.sum_wvl)
+            new_hdulist.append(new_hdu)
+        if args.sum_wvl:
+            filename = f'{args.output_dir}/{basename}_remapped_img.fits'
+        else:
+            filename = f'{args.output_dir}/{basename}_remapped.fits'
+        new_hdulist.writeto(filename, overwrite=True)
 
         if args.plot_results:
             import matplotlib as mpl
