@@ -231,8 +231,65 @@ class PlotResults():
                     pdf.savefig()
 
 
-if __name__ == '__main__':
+def correct_spice_pointing(spice_spice_pointing, filename, output_dir,
+                           plot_results=False, sum_wvl=False):
+    ''' Correct the pointing in a SPICE level 2 FITS
 
+    Parameters
+    ==========
+    spice_spice_pointing : SpiceSpicePointing
+        SPICE kernels interface for the SPICE spectrometer
+    filename : str
+        SPICE L2 FITS
+    output_dir : str
+        directory where the corrected FITS and plots are saved
+    plot_results : bool (default: False)
+        generate plots to visualize the results
+    sum_wvl : bool (default: False)
+        If True, sum along wavelength axis to generate a quicklook image.
+
+    The aligned fits are saved in <output_dir> under the name
+    <solo_L2_spice_..._remapped.fits> when sum_wvl is False, or
+    <solo_L2_spice_..._remapped_img.fits>. when sum_wvl is True.
+    '''
+    # filename operations
+    basename = os.path.splitext(os.path.basename(filename))[0]
+    if sum_wvl:
+        output_fits = f'{output_dir}/{basename}_remapped_img.fits'
+    else:
+        output_fits = f'{output_dir}/{basename}_remapped.fits'
+
+    # open FITS
+    hdulist = fits.open(filename)
+    timestamps = get_spice_timestamps(hdulist)
+
+    # determine pointing
+    Tx, Ty, roll = spice_spice_pointing.compute_pointing(timestamps)
+
+    # interpolate data
+    new_hdulist = fits.HDUList(hdus=[])
+    for hdu in hdulist:
+        new_hdu = remap_spice_hdu(hdu, Tx, Ty, roll, sum_wvl=sum_wvl)
+        new_hdulist.append(new_hdu)
+
+    # save data
+    new_hdulist.writeto(output_fits, overwrite=True)
+
+    # generate plots
+    if plot_results:
+        p = PlotResults()
+        p.plot_pointing(
+            timestamps, Tx, Ty, roll,
+            f'{output_dir}/{basename}_plot_TxTy.pdf')
+        p.plot_hdulist(
+            hdulist,
+            f'{output_dir}/{basename}_original.pdf')
+        p.plot_hdulist(
+            new_hdulist,
+            f'{output_dir}/{basename}_remapped.pdf')
+
+
+def main():
     p = argparse.ArgumentParser(
         description=('Correct the pointing of the SPICE spectrometer '
                      'using SPICE kernels'),
@@ -251,28 +308,14 @@ if __name__ == '__main__':
     spice_spice_pointing = SpiceSpicePointing()
 
     for filename in args.files:
-        basename = os.path.splitext(os.path.basename(filename))[0]
-        hdulist = fits.open(filename)
-        timestamps = get_spice_timestamps(hdulist)
-        Tx, Ty, roll = spice_spice_pointing.compute_pointing(timestamps)
-        new_hdulist = fits.HDUList(hdus=[])
-        for hdu in hdulist:
-            new_hdu = remap_spice_hdu(hdu, Tx, Ty, roll, sum_wvl=args.sum_wvl)
-            new_hdulist.append(new_hdu)
-        if args.sum_wvl:
-            filename = f'{args.output_dir}/{basename}_remapped_img.fits'
-        else:
-            filename = f'{args.output_dir}/{basename}_remapped.fits'
-        new_hdulist.writeto(filename, overwrite=True)
+        correct_spice_pointing(
+            spice_spice_pointing,
+            filename,
+            args.output_dir,
+            plot_results=args.plot_results,
+            sum_wvl=args.sum_wvl,
+            )
 
-        if args.plot_results:
-            p = PlotResults()
-            p.plot_pointing(
-                timestamps, Tx, Ty, roll,
-                f'{args.output_dir}/{basename}_plot_TxTy.pdf')
-            p.plot_hdulist(
-                hdulist,
-                f'{args.output_dir}/{basename}_original.pdf')
-            p.plot_hdulist(
-                new_hdulist,
-                f'{args.output_dir}/{basename}_remapped.pdf')
+
+if __name__ == '__main__':
+    main()
