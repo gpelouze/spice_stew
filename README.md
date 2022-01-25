@@ -33,7 +33,7 @@ To install the SPICE stew package, run:
 
 ```
 git clone https://github.com/gpelouze/spice_stew
-pip install --user spice-stew
+pip install --user spice_stew
 ```
 
 

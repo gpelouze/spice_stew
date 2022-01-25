@@ -22,6 +22,9 @@ except ImportError:
     warnings.warn('Could not import matplotlib, visualisation will not work')
 
 
+__all__ = ['SpiceSpicePointing', 'correct_spice_pointing']
+
+
 class SpiceSpicePointing():
     def __init__(self, kernels_folder=None, clean_start=True):
         ''' Compute the pointing of the SPICE spectrometer using SPICE kernels
