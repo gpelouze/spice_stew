@@ -235,7 +235,7 @@ class PlotResults():
 
 
 def correct_spice_pointing(spice_spice_pointing, filename, output_dir,
-                           plot_results=False, sum_wvl=False):
+                           overwrite=False, plot_results=False, sum_wvl=False):
     ''' Correct the pointing in a SPICE level 2 FITS
 
     Parameters
@@ -246,6 +246,8 @@ def correct_spice_pointing(spice_spice_pointing, filename, output_dir,
         SPICE L2 FITS
     output_dir : str
         directory where the corrected FITS and plots are saved
+    overwrite : bool (default: False)
+        overwrite output FITS if it already exists
     plot_results : bool (default: False)
         generate plots to visualize the results
     sum_wvl : bool (default: False)
@@ -266,6 +268,10 @@ def correct_spice_pointing(spice_spice_pointing, filename, output_dir,
         output_fits = f'{output_dir}/{basename}_remapped_img.fits'
     else:
         output_fits = f'{output_dir}/{basename}_remapped.fits'
+
+    if os.path.isfile(output_fits) and not overwrite:
+        print('Aligned file exists: {output_fits}, exiting')
+        return output_fits
 
     # open FITS
     hdulist = fits.open(filename)
