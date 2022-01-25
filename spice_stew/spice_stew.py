@@ -254,6 +254,11 @@ def correct_spice_pointing(spice_spice_pointing, filename, output_dir,
     The aligned fits are saved in <output_dir> under the name
     <solo_L2_spice_..._remapped.fits> when sum_wvl is False, or
     <solo_L2_spice_..._remapped_img.fits>. when sum_wvl is True.
+
+    Returns
+    =======
+    output_fits : str
+        Path to the saved FITS
     '''
     # filename operations
     basename = os.path.splitext(os.path.basename(filename))[0]
@@ -290,6 +295,8 @@ def correct_spice_pointing(spice_spice_pointing, filename, output_dir,
         p.plot_hdulist(
             new_hdulist,
             f'{output_dir}/{basename}_remapped.pdf')
+
+    return output_fits
 
 
 def main():
