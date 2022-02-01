@@ -67,6 +67,25 @@ class SpiceSpicePointing():
             timestamps = np.datetime_as_string(timestamps)
         return spiceypy.str2et(timestamps)
 
+    def _ang_to_pipi(self, a):
+        ''' Convert any angle to the range ]-pi, pi]
+
+        Parameters
+        ==========
+        a : float or astropy quantity
+            Angle to convert. If it has no quantity, assumes it is in radians.
+
+        Returns
+        =======
+        a : float or astropy quantity
+            Converted angle.
+        '''
+        if hasattr(a, 'unit'):
+            pi = u.Quantity(np.pi, 'rad').to(a.unit)
+        else:
+            pi = np.pi
+        return - ((- a + pi) % (2*pi) - pi)
+
     def compute_pointing(self, timestamps):
         ''' Compute SPICE pointing
 
@@ -98,6 +117,9 @@ class SpiceSpicePointing():
         Tx = u.Quantity(Tx, 'rad').to('arcsec')
         Ty = u.Quantity(Ty, 'rad').to('arcsec')
         roll = u.Quantity(roll, 'rad').to('deg')
+        Tx = self._ang_to_pipi(Tx)
+        Ty = self._ang_to_pipi(Ty)
+        roll = self._ang_to_pipi(roll)
 
         return Tx, Ty, roll
 
