@@ -113,7 +113,7 @@ class SpiceSpicePointing():
             r2, r3, r1 = spiceypy.m2eul(rot_mat, 2, 3, 1)
             Ty.append(- r2 + np.pi)
             Tx.append(r3)
-            roll.append(r1 + np.pi)
+            roll.append(r1 - np.pi)
         Tx = u.Quantity(Tx, 'rad').to('arcsec')
         Ty = u.Quantity(Ty, 'rad').to('arcsec')
         roll = u.Quantity(roll, 'rad').to('deg')
