@@ -219,7 +219,7 @@ class PlotResults():
         img = img - np.nanmin(img)
         norm = mpl.colors.LogNorm(
             vmin=np.max([1, np.nanpercentile(img, 1)]),
-            vmax=np.nanpercentile(img, 99),
+            vmax=np.max([10, np.nanpercentile(img, 99)]),
             )
         im = ax.imshow(img, origin='lower', norm=norm, aspect=1/4)
         plt.title(hdu.name)
