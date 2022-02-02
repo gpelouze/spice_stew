@@ -292,7 +292,7 @@ def correct_spice_pointing(spice_spice_pointing, filename, output_dir,
         output_fits = f'{output_dir}/{basename}_remapped.fits'
 
     if os.path.isfile(output_fits) and not overwrite:
-        print('Aligned file exists: {output_fits}, exiting')
+        print(f'Aligned file exists: {output_fits}, exiting')
         return output_fits
 
     # open FITS
