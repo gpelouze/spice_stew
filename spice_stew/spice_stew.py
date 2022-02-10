@@ -287,6 +287,7 @@ def correct_spice_pointing(spice_spice_pointing, filename, output_dir,
     output_fits : str
         Path to the saved FITS
     '''
+    os.makedirs(output_dir, exist_ok=True)
     # filename operations
     basename = os.path.splitext(os.path.basename(filename))[0]
     if sum_wvl:
@@ -344,7 +345,6 @@ def main():
     p.add_argument('--sum-wvl', action='store_true',
                    help='save wavelength-integrated images')
     args = p.parse_args()
-    os.makedirs(args.output_dir, exist_ok=True)
 
     spice_spice_pointing = SpiceSpicePointing()
 
