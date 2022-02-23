@@ -225,37 +225,48 @@ def get_spice_timestamps(hdulist):
 
 
 class PlotResults():
-    def plot_pointing(self, timestamps, Tx, Ty, roll, filename):
+    def plot_pointing(self, timestamps, Tx, Ty, roll, spice_name, filename):
         t = [np.datetime64(t) for t in timestamps]
+        t_ref = np.min(t).astype('datetime64[s]')
+        t = (t - t_ref).astype('timedelta64[s]').astype(float) / 3600  # hour
         plt.clf()
-        plt.plot(t, Tx - Tx[0], label='$\\theta_x$')
-        plt.plot(t, Ty - Ty[0], label='$\\theta_y$')
+        Tx_ref = np.mean(Tx).to('arcsec')
+        Ty_ref = np.mean(Ty).to('arcsec')
+        Tx = Tx - Tx_ref
+        Ty = Ty - Ty_ref
+        plt.plot(t, Tx, label=f'$X {Tx_ref.value:+.1f}$ arcsec')
+        plt.plot(t, Ty, label=f'$Y {Ty_ref.value:+.1f}$ arcsec')
         plt.legend()
-        plt.gcf().autofmt_xdate()
-        plt.xlabel('Time')
-        plt.ylabel('$\\Delta\\theta$ [arcsec]')
+        plt.title(spice_name, fontsize=12)
+        plt.xlabel(f'Time since {t_ref} [h]')
+        plt.ylabel('Relative pointing angle [arcsec]')
         plt.savefig(filename)
+        return t_ref
 
-    def plot_hdu(self, hdu, ax):
+    def plot_hdu(self, hdu, ax, spice_name):
         img = hdu.data
         if img.ndim > 2:
             img = np.nansum(img, axis=1)  # Sum over wavelengths
             img = np.squeeze(img)  # Collapse 1-depth axis (t or X)
-        img = img - np.nanmin(img)
+        def nanptp(a):
+            return np.nanmax(a) - np.nanmin(a)
+        img = img - np.nanmin(img) + 0.01*nanptp(img)
         norm = mpl.colors.LogNorm(
-            vmin=np.max([1, np.nanpercentile(img, 1)]),
-            vmax=np.max([10, np.nanpercentile(img, 99)]),
+            vmin=np.nanpercentile(img, 1),
+            vmax=np.nanpercentile(img, 99),
             )
         im = ax.imshow(img, origin='lower', norm=norm, aspect=1/4)
-        plt.title(hdu.name)
+        plt.title(f'{spice_name}\n{hdu.name}', fontsize=12)
+        plt.xlabel('X [px]')
+        plt.ylabel('Y [px]')
         plt.colorbar(im)
 
-    def plot_hdulist(self, hdulist, filename):
+    def plot_hdulist(self, hdulist, spice_name, filename):
         with PdfPages(filename) as pdf:
             for hdu in hdulist:
                 if hdu.is_image:
                     plt.clf()
-                    self.plot_hdu(hdu, plt.gca())
+                    self.plot_hdu(hdu, plt.gca(), spice_name)
                     pdf.savefig()
 
 
@@ -318,14 +329,15 @@ def correct_spice_pointing(spice_spice_pointing, filename, output_dir,
     # generate plots
     if plot_results:
         p = PlotResults()
+        spice_name = os.path.basename(hdulist.filename())
         p.plot_pointing(
-            timestamps, Tx, Ty, roll,
+            timestamps, Tx, Ty, roll, spice_name,
             f'{output_dir}/{basename}_plot_TxTy.pdf')
         p.plot_hdulist(
-            hdulist,
+            hdulist, spice_name,
             f'{output_dir}/{basename}_original.pdf')
         p.plot_hdulist(
-            new_hdulist,
+            new_hdulist, spice_name,
             f'{output_dir}/{basename}_remapped.pdf')
 
     return output_fits
