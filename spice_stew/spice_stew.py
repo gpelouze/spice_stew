@@ -55,7 +55,10 @@ class SpiceSpicePointing():
             kernels_folder,
             'mk',
             'solo_ANC_soc-flown-mk_*.tm')
-        mk_file = sorted(glob.glob(mk_files_pattern))[-1]
+        mk_files = sorted(glob.glob(mk_files_pattern))
+        if len(mk_files) == 0:
+            raise ValueError(f'No SPICE kernels found in {kernels_folder}')
+        mk_file = mk_files[-1]
         spiceypy.furnsh(mk_file)
 
     def clear_kernels(self):
