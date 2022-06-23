@@ -13,7 +13,7 @@ entry_points = {
 
 setuptools.setup(
     name='spice_stew',
-    version='2022.05.19',
+    version='2022.06.23',
     author='Gabriel Pelouze',
     author_email='gabriel.pelouze@universite-paris-saclay.fr',
     description='Correct the pointing of SOLO/SPICE with SPICE kernels',
