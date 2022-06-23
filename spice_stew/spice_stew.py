@@ -219,7 +219,7 @@ def get_spice_timestamps(hdulist):
         stares)
     '''
     # extract timestamps from binary table HDU
-    timestamps = hdulist[-1].data['TIMAQUTC'][0, 0, 0, 0]
+    timestamps = hdulist['VARIABLE_KEYWORDS'].data['TIMAQUTC'][0, 0, 0, 0]
     timestamps = np.array([np.datetime64(t) for t in timestamps])
     # extract exposure time from primary HDU header
     t_exp = np.timedelta64(int(1e3*hdulist[0].header['XPOSURE']), 'ms')
