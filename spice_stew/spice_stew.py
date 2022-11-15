@@ -152,7 +152,7 @@ def remap_spice_hdu(hdu, solo_Tx, solo_Ty, solo_roll, sum_wvl=False):
     hdu : astropy.io.fits.ImageHDU
         Aligned SPICE 'L2a' HDU
     '''
-    if not hdu.is_image:
+    if (not hdu.is_image) or (hdu.name == 'WCSDVARR'):
         return hdu
     # Get wcs coordinates from fits
     w = wcs.WCS(hdu.header)
@@ -267,7 +267,7 @@ class PlotResults():
     def plot_hdulist(self, hdulist, spice_name, filename):
         with PdfPages(filename) as pdf:
             for hdu in hdulist:
-                if hdu.is_image:
+                if hdu.is_image and (hdu.name != 'WCSDVARR'):
                     plt.clf()
                     self.plot_hdu(hdu, plt.gca(), spice_name)
                     pdf.savefig()
