@@ -274,7 +274,8 @@ class PlotResults():
 
 
 def correct_spice_pointing(spice_spice_pointing, filename, output_dir,
-                           overwrite=False, plot_results=False, sum_wvl=False):
+                           overwrite=False, plot_results=False,
+                           sum_wvl=False, windows=None):
     ''' Correct the pointing in a SPICE level 2 FITS
 
     Parameters
@@ -291,6 +292,8 @@ def correct_spice_pointing(spice_spice_pointing, filename, output_dir,
         generate plots to visualize the results
     sum_wvl : bool (default: False)
         If True, sum along wavelength axis to generate a quicklook image.
+    windows : list of str or None (default: None)
+        Windows to keep. If None, keep all windows.
 
     The aligned fits are saved in <output_dir> under the name
     <solo_L2_spice_..._remapped.fits> when sum_wvl is False, or
@@ -322,7 +325,11 @@ def correct_spice_pointing(spice_spice_pointing, filename, output_dir,
 
     # interpolate data
     new_hdulist = fits.HDUList(hdus=[])
-    for hdu in hdulist:
+    if windows is None:
+        windows = [hdu.name for hdu in hdulist
+                   if hdu.is_image and (hdu.name != 'WCSDVARR')]
+    for win in windows:
+        hdu = hdulist[win]
         new_hdu = remap_spice_hdu(hdu, Tx, Ty, roll, sum_wvl=sum_wvl)
         new_hdulist.append(new_hdu)
 
