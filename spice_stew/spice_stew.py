@@ -328,8 +328,8 @@ def correct_spice_pointing(spice_spice_pointing, filename, output_dir,
     if windows is None:
         windows = [hdu.name for hdu in hdulist
                    if hdu.is_image and (hdu.name != 'WCSDVARR')]
-    windows += [hdu.name for hdu in hdulist
-                if not hdu.is_image or (hdu.name == 'WCSDVARR')]
+    windows = windows + [hdu.name for hdu in hdulist
+                         if not hdu.is_image or (hdu.name == 'WCSDVARR')]
     for win in windows:
         hdu = hdulist[win]
         new_hdu = remap_spice_hdu(hdu, Tx, Ty, roll, sum_wvl=sum_wvl)
