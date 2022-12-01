@@ -296,7 +296,7 @@ def remap_spice_hdu(hdu, solo_Tx, solo_Ty, solo_roll, sum_wvl=False):
             new_img = interp(xi_interp)
             new_hdu.data[it, iD] = new_img
     new_hdu.update_header()
-    new_hdu.header.add_history('align_spice_with_spice.py')
+    new_hdu.header.add_history('spice_stew.py')
     new_hdu.add_datasum()
     new_hdu.add_checksum()
     return new_hdu
